@@ -8,7 +8,6 @@ constexpr int EVALUATION_CYCLES = 10000000;
 int main(int argc, char* argv[]) {
 const char* ctx = (argc > 1) ? argv[1] : "DEFAULT_CTX";
 
-```
 std::cout << "========================================================\n";
 std::cout << "               HYPUTE EVALUATION ENVIRONMENT            \n";
 std::cout << "========================================================\n";
@@ -51,6 +50,5 @@ std::cout << "========================================================\n";
 hypute_shutdown();
 
 return 0;
-```
 
 }
