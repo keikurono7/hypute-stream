@@ -1,8 +1,7 @@
-#include <iostream>
 #include <vector>
 #include <unordered_map>
 #include <chrono>
-#include <cstdint> // Added to safeguard uint64_t usage
+#include <cstdint>
 
 struct RawTransaction {
     uint64_t src;
@@ -18,7 +17,7 @@ void run_traditional_benchmark(const std::vector<RawTransaction>& workload) {
     if (total_records == 0) return;
     
     std::unordered_map<uint64_t, std::unordered_map<uint64_t, double>> legacy_matrix;
-    legacy_matrix.reserve(8192);
+    legacy_matrix.reserve(162000);
 
     auto start = std::chrono::high_resolution_clock::now();
 
