@@ -1,65 +1,175 @@
 # Hypute Stream Evaluation Suite
 
-Hypute Stream is a high-performance runtime platform developed by Hayako for enterprise environments where execution efficiency, predictable behavior, and operational consistency are critical. The platform is engineered specifically to optimize latency-sensitive and performance-critical enterprise workloads.
+Hypute Stream is a runtime platform developed by Hayako for latency-sensitive and performance-critical environments where execution predictability, bounded resource consumption, and operational consistency are important.
 
-This repository provides a unified verification framework that allows engineering teams and infrastructure architects to validate deployment compatibility, observe operational stability, and execute comparative benchmarks using industry-standard transaction profiles within their own environments.
+This repository provides a public evaluation environment allowing engineering teams and infrastructure architects to:
+
+* Validate deployment compatibility
+* Evaluate runtime behavior
+* Benchmark execution characteristics
+* Compare runtime behavior against conventional data-structure approaches using publicly available datasets
 
 This repository contains a limited evaluation environment and does not include components distributed as part of commercial deployments.
+
+---
 
 ## Evaluation Profiles
 
 ### 1. Verification Runtime Sandbox
-A standard loop harness executing over isolated computational operations to verify platform environmental stability, threading constraints, and fundamental baseline execution latency.
 
-### 2. User-Interaction Stream Workload (MovieLens 1M)
-A real-world trace verification evaluation mimicking high-frequency sequential pipeline entries using the GroupLens MovieLens 1M standard dataset. This profile demonstrates processing velocity scaling across complex dataset schemas without altering the target host system parameters.
+A lightweight execution harness used to validate environment compatibility and establish baseline execution characteristics.
 
-## Getting Started
+The sandbox reports:
 
-### Prerequisites
-Ensure your local host environment features a modern C++17 compliant compiler frontend (`g++` or `clang++`), `cmake`, and standard compression tools (`unzip`, `curl`).
+* Execution throughput
+* Average execution latency
+* Runtime stability across repeated cycles
 
-### 1. Retrieve Data Assets
-Execute the asset acquisition script to secure the localized evaluation workload blocks before launching your build:
+### 2. Streaming State Mutation Benchmark
+
+A comparative benchmark built on the GroupLens MovieLens 25M dataset.
+
+The benchmark evaluates two execution models:
+
+* Traditional nested associative-map processing
+* Hypute Stream runtime processing
+
+Two workload modes are executed.
+
+#### Preserved Sorted Data
+
+Events are processed using the original dataset ordering.
+
+This workload benefits strongly from locality and cache-friendly access patterns.
+
+#### High-Entropy Randomized Data
+
+Events are randomized before execution to simulate asynchronous production traffic.
+
+This workload reduces locality and increases memory-access entropy, creating a more demanding mutation environment.
+
+---
+
+## Prerequisites
+
+Install:
+
+* C++17 compatible compiler (GCC or Clang)
+* CMake
+* curl
+* unzip
+
+---
+
+## Download Dataset
+
 ```bash
 cd benchmarks/movielens
 chmod +x dataset_download.sh
 ./dataset_download.sh
 cd ../..
-
 ```
 
-### 2. Build the Framework Targets
+---
 
-To guarantee clean generation of runtime assets, run an idiomatic out-of-source CMake build sequence:
+## Build
 
 ```bash
 mkdir build
 cd build
+
 cmake -DCMAKE_BUILD_TYPE=Release ..
 make -j
-
 ```
-
-### 3. Run System Profiles
-
-Execute the compiled evaluation targets directly from your build workspace:
-
-```bash
-# Run the validation sanity runner
-./hypute_eval
-
-# Run the transactional sequence profile comparison
-./benchmark_runner
-
-```
-
-## Evaluation Metrics
-
-The public evaluation environment reports only factual execution throughput and latency characteristics observed programmatically during active execution loops.
-
-Observed outputs, processing pacing profiles, and execution velocities will vary naturally based on specific hardware topologies, operating system thread scheduling, and processor cache capabilities. These metrics are strictly intended to provide an objective baseline for organizational engineering self-selection.
 
 ---
 
-*© 2026 Hayako. All rights reserved.*
+## Run Benchmark
+
+Traditional baseline:
+
+```bash
+./benchmark_runner traditional
+```
+
+Hypute runtime:
+
+```bash
+./benchmark_runner hypute
+```
+
+---
+
+## Reference Results
+
+The following measurements were obtained using the public evaluation environment and are provided as reference values only.
+
+Results will vary depending on processor architecture, memory configuration, compiler version, operating system scheduling behavior, and workload characteristics.
+
+### Preserved Sorted Dataset
+
+| Metric     | Traditional | Hypute Stream |
+| ---------- | ----------- | ------------- |
+| Throughput | 13.62 M qps | 5.58 M qps    |
+| Latency    | 73.40 ns    | 179.25 ns     |
+
+### High-Entropy Randomized Dataset
+
+| Metric     | Traditional | Hypute Stream |
+| ---------- | ----------- | ------------- |
+| Throughput | 1.52 M qps  | 5.53 M qps    |
+| Latency    | 659.07 ns   | 180.90 ns     |
+
+### Memory Characteristics
+
+| Metric                     | Traditional | Hypute Stream |
+| -------------------------- | ----------- | ------------- |
+| Dataset RSS Baseline       | 575.98 MB   | 575.95 MB     |
+| Final Retained RSS         | 1634.78 MB  | 576.25 MB     |
+| Retained Allocation Delta  | 1058.80 MB  | 0.30 MB       |
+| Peak Resident Memory (RSS) | 1637 MB     | 1148 MB       |
+
+---
+
+## Interpretation
+
+These measurements demonstrate two distinct operational behaviors.
+
+### Ordered Access Patterns
+
+When interaction records remain highly ordered and cache-local, the traditional associative-map implementation achieves higher mutation throughput and lower latency.
+
+### High-Entropy Access Patterns
+
+When interaction ordering is randomized and locality decreases:
+
+* The traditional associative-map implementation exhibits substantial throughput degradation and latency growth.
+* Hypute Stream maintains comparatively stable throughput and latency characteristics.
+* Peak memory consumption during execution was lower for Hypute Stream in the evaluated workload.
+
+These observations are workload-specific and should be independently validated within the target deployment environment.
+
+---
+
+## Reproducibility
+
+All benchmark workloads are derived from publicly available datasets and can be executed locally using the commands documented above.
+
+Organizations evaluating the platform are encouraged to:
+
+* Run benchmarks on their own hardware
+* Compare compiler configurations
+* Evaluate different processor architectures
+* Validate behavior using their own representative workloads
+
+---
+
+## Enterprise Evaluation
+
+This repository is intended for compatibility assessment, performance exploration, and deployment validation.
+
+Commercial deployments may differ from the public evaluation environment.
+
+For enterprise evaluations, pilot programs, or commercial discussions, please contact the Hayako team.
+
+© 2026 Hayako. All rights reserved.
