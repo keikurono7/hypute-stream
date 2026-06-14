@@ -2,6 +2,7 @@
 #include <vector>
 #include <unordered_map>
 #include <chrono>
+#include <cstdint> // Added to safeguard uint64_t usage
 
 struct RawTransaction {
     uint64_t src;
