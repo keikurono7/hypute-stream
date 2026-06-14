@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 #include <iomanip>
-#include <cstdint> // Added to fix the uint64_t compilation error
+#include <cstdint>
 
 struct RawTransaction {
     uint64_t src;
@@ -23,20 +23,20 @@ extern double hypute_average_latency_ns;
 int main(int argc, char* argv[]) {
     const char* ctx = (argc > 1) ? argv[1] : "DEFAULT_CTX";
     
-    std::string dataset = "ml-1m/ratings.dat";
+    std::string dataset = "ml-25m/ratings.csv";
     std::ifstream file(dataset);
     
     if (!file.is_open()) {
-        dataset = "../benchmarks/movielens/ml-1m/ratings.dat";
+        dataset = "../benchmarks/movielens/ml-25m/ratings.csv";
         file.open(dataset);
     }
     if (!file.is_open()) {
-        dataset = "../../benchmarks/movielens/ml-1m/ratings.dat";
+        dataset = "../../benchmarks/movielens/ml-25m/ratings.csv";
         file.open(dataset);
     }
 
     if (!file.is_open()) {
-        std::cerr << "[ERROR] MovieLens dataset asset files not found.\n";
+        std::cerr << "[ERROR] MovieLens 25M dataset asset files not found.\n";
         std::cerr << "Verify execution steps: benchmarks/movielens/dataset_download.sh\n";
         return 1;
     }
@@ -44,19 +44,29 @@ int main(int argc, char* argv[]) {
     std::cout << "[HAYAKO LOG] Ingesting evaluation records from: " << dataset << "...\n";
 
     std::vector<RawTransaction> workload_buffer;
+    // Pre-allocate matrix parameters to shield the parsing thread from resizing reallocations
+    workload_buffer.reserve(25000000);
+
     std::string line;
 
+    // Step past and skip the CSV column header row (userId,movieId,rating,timestamp)
+    if (std::getline(file, line)) {
+        // Header skipped successfully
+    }
+
+    // Ingest sequential records from the comma-separated layout
     while (std::getline(file, line)) {
         if (line.empty()) continue;
-        size_t p1 = line.find("::");
-        size_t p2 = line.find("::", p1 + 2);
-        size_t p3 = line.find("::", p2 + 2);
+        
+        size_t p1 = line.find(',');
+        size_t p2 = line.find(',', p1 + 1);
+        size_t p3 = line.find(',', p2 + 1);
 
         if (p1 != std::string::npos && p2 != std::string::npos && p3 != std::string::npos) {
             RawTransaction tx;
             tx.src = std::stoull(line.substr(0, p1));
-            tx.tgt = std::stoull(line.substr(p1 + 2, p2 - (p1 + 2)));
-            tx.val = std::stod(line.substr(p2 + 2, p3 - (p2 + 2)));
+            tx.tgt = std::stoull(line.substr(p1 + 1, p2 - (p1 + 1)));
+            tx.val = std::stod(line.substr(p2 + 1, p3 - (p2 + 1)));
             workload_buffer.push_back(tx);
         }
     }
@@ -84,7 +94,7 @@ int main(int argc, char* argv[]) {
     }
 
     std::cout << "\n========================================================\n";
-    std::cout << "        MOVIELENS 1M STREAMING STATE MUTATION BENCHMARK \n";
+    std::cout << "        MOVIELENS 25M STREAMING STATE MUTATION BENCHMARK \n";
     std::cout << "========================================================\n\n";
     
     std::cout << "[STATUS] Total Records Processed : " << record_count << " Interaction Rows\n\n";
