@@ -1,6 +1,6 @@
-#include <iostream>
 #include <vector>
 #include <chrono>
+#include <cstdint>
 #include "hypute_stream.h"
 
 struct RawTransaction {
