@@ -14,9 +14,8 @@ jobs:
       - name: Install Toolchain Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake unzip curl
+          sudo apt-get install -y build-essential cmake unzip curl time
 
-          # Execute the dataset script from its local directory location
       - name: Download Data Asset
         run: |
           cd benchmarks/movielens
@@ -30,7 +29,12 @@ jobs:
           cmake -DCMAKE_BUILD_TYPE=Release ..
           make -j$(nproc)
 
-      - name: Execute Streaming State Mutation Benchmark
+      - name: Profile Traditional Engine (Memory & Ingestion)
         run: |
           cd build
-          ./benchmark_runner
+          /usr/bin/time -v ./benchmark_runner traditional
+
+      - name: Profile Hypute Engine (Memory & Ingestion)
+        run: |
+          cd build
+          /usr/bin/time -v ./benchmark_runner hypute
