@@ -1,123 +1,65 @@
-# Hypute Stream Evaluation Environment
+# Hypute Stream Evaluation Suite
 
-Hypute Stream is a high-performance runtime platform developed by Hayako for enterprise environments where execution efficiency, predictable behavior, and operational consistency are critical.
+Hypute Stream is a high-performance runtime platform developed by Hayako for enterprise environments where execution efficiency, predictable behavior, and operational consistency are critical. The platform is engineered specifically to optimize latency-sensitive and performance-critical enterprise workloads.
 
-The platform is engineered for latency-sensitive and performance-critical workloads where deterministic execution behavior and infrastructure compatibility are important operational requirements.
-
-This repository provides a public evaluation environment that allows engineering teams and infrastructure architects to validate deployment compatibility, observe runtime characteristics, and test integration workflows within their own environments before engaging with Hayako for commercial access.
+This repository provides a unified verification framework that allows engineering teams and infrastructure architects to validate deployment compatibility, observe operational stability, and execute comparative benchmarks using industry-standard transaction profiles within their own environments.
 
 This repository contains a limited evaluation environment and does not include components distributed as part of commercial deployments.
 
----
+## Evaluation Profiles
 
-## Why Evaluate Hypute Stream?
+### 1. Verification Runtime Sandbox
+A standard loop harness executing over isolated computational operations to verify platform environmental stability, threading constraints, and fundamental baseline execution latency.
 
-Organizations evaluating infrastructure software often need to answer several important questions before committing to a pilot deployment:
+### 2. User-Interaction Stream Workload (MovieLens 1M)
+A real-world trace verification evaluation mimicking high-frequency sequential pipeline entries using the GroupLens MovieLens 1M standard dataset. This profile demonstrates processing velocity scaling across complex dataset schemas without altering the target host system parameters.
 
-* Does it execute correctly within our environment?
-* Does it integrate with our existing tooling and workflows?
-* Can it be deployed and validated by our engineering teams?
-* Does it behave consistently across different systems?
-* How does execution behavior vary across hardware platforms?
+## Getting Started
 
-This repository is designed to help answer those questions.
+### Prerequisites
+Ensure your local host environment features a modern C++17 compliant compiler frontend (`g++` or `clang++`), `cmake`, and standard compression tools (`unzip`, `curl`).
 
----
+### 1. Retrieve Data Assets
+Execute the asset acquisition script to secure the localized evaluation workload blocks before launching your build:
+```bash
+cd benchmarks/movielens
+chmod +x dataset_download.sh
+./dataset_download.sh
+cd ../..
 
-## Quick Evaluation (GitHub Actions)
-
-### 1. Fork the Repository
-
-Create a personal copy of this repository using GitHub's Fork feature.
-
-### 2. Enable GitHub Actions
-
-Open the Actions tab within your fork and enable workflows.
-
-### 3. Run the Evaluation Workflow
-
-Execute the available workflow from the Actions interface.
-
-### 4. Review Results
-
-Once execution completes, inspect the generated logs and artifacts.
-
-The evaluation workflow will generate a runtime profile similar to:
-
-```text
-========================================================
-                HYPUTE EVALUATION RESULTS
-========================================================
-
-[STATUS] Evaluation Cycles      : 10000000
-[STATUS] Active Inputs          : 3
-[STATUS] Total Runtime          : ...
-[STATUS] Average Execution Time : ...
-[STATUS] Throughput             : ... M executions/sec
-
-========================================================
 ```
 
-Results vary depending on hardware, operating system configuration, virtualization overhead, CPU topology, and runtime environment.
+### 2. Build the Framework Targets
 
----
-
-## Local Validation
-
-Organizations requiring direct hardware validation may execute the evaluation environment locally.
-
-### Requirements
-
-* Linux
-* CMake
-* GCC or Clang with C++17 support
-
-### Build
+To guarantee clean generation of runtime assets, run an idiomatic out-of-source CMake build sequence:
 
 ```bash
 mkdir build
 cd build
-
 cmake -DCMAKE_BUILD_TYPE=Release ..
-make
+make -j
+
 ```
 
-### Execute
+### 3. Run System Profiles
+
+Execute the compiled evaluation targets directly from your build workspace:
 
 ```bash
-./hypute_stream_bench
+# Run the validation sanity runner
+./hypute_eval
+
+# Run the transactional sequence profile comparison
+./benchmark_runner
+
 ```
 
-Optional evaluation context:
+## Evaluation Metrics
 
-```bash
-./hypute_stream_bench <context>
-```
+The public evaluation environment reports only factual execution throughput and latency characteristics observed programmatically during active execution loops.
 
-### Compare Hardware Platforms
-
-The evaluation environment reports:
-
-* Evaluation cycles
-* Average execution time
-* Throughput (executions per second)
-
-This allows engineering teams to compare runtime behavior across laptops, workstations, cloud instances, and server hardware.
+Observed outputs, processing pacing profiles, and execution velocities will vary naturally based on specific hardware topologies, operating system thread scheduling, and processor cache capabilities. These metrics are strictly intended to provide an objective baseline for organizational engineering self-selection.
 
 ---
 
-## Evaluation Environment Notice
-
-This repository represents a controlled evaluation build and should not be interpreted as a disclosure of product architecture, implementation methodology, optimization techniques, or production capabilities.
-
-Commercial deployments may differ from the public evaluation environment.
-
----
-
-## Enterprise Access
-
-Hayako collaborates with organizations interested in infrastructure evaluations, pilot programs, and commercial deployments.
-
-For enterprise discussions, please contact the Hayako team.
-
-© 2026 Hayako. All rights reserved.
+*© 2026 Hayako. All rights reserved.*
