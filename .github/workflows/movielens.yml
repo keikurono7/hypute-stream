@@ -1,0 +1,36 @@
+name: Hypute MovieLens Benchmark
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-streaming-benchmark:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Toolchain Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake unzip curl
+
+          # Execute the dataset script from its local directory location
+      - name: Download Data Asset
+        run: |
+          cd benchmarks/movielens
+          chmod +x dataset_download.sh
+          ./dataset_download.sh
+
+      - name: Build Targets (Release Mode)
+        run: |
+          mkdir build
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=Release ..
+          make -j$(nproc)
+
+      - name: Execute Streaming State Mutation Benchmark
+        run: |
+          cd build
+          ./benchmark_runner
