@@ -4,22 +4,26 @@ on:
   workflow_dispatch:
 
 jobs:
-  run-evaluation:
+  validate-environment:
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-    
-      - name: Install Dependencies
+
+      - name: Install Toolchain Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake
-    
-      - name: Build Evaluation Environment
+
+      - name: Build Targets (Release Mode)
         run: |
-          cmake .
-          make
-    
-      - name: Execute Evaluation Run
-        run: ./hypute_stream_bench
+          mkdir build
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=Release ..
+          make -j$(nproc)
+
+      - name: Execute Environmental Verification
+        run: |
+          cd build
+          ./hypute_eval
