@@ -4,6 +4,8 @@
 #include <vector>
 #include <iomanip>
 #include <cstdint>
+#include <algorithm> 
+#include <random>    
 
 struct RawTransaction {
     uint64_t src;
@@ -44,17 +46,15 @@ int main(int argc, char* argv[]) {
     std::cout << "[HAYAKO LOG] Ingesting evaluation records from: " << dataset << "...\n";
 
     std::vector<RawTransaction> workload_buffer;
-    // Pre-allocate matrix parameters to shield the parsing thread from resizing reallocations
     workload_buffer.reserve(25000000);
 
     std::string line;
 
-    // Step past and skip the CSV column header row (userId,movieId,rating,timestamp)
+    // Step past the CSV column header row
     if (std::getline(file, line)) {
-        // Header skipped successfully
+        // Header skipped
     }
 
-    // Ingest sequential records from the comma-separated layout
     while (std::getline(file, line)) {
         if (line.empty()) continue;
         
@@ -78,6 +78,11 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    // Sequence manipulation executed outside timed boundaries to isolate execution metrics
+    std::cout << "[HAYAKO LOG] Randomizing stream event sequencing to mimic real-time production traffic...\n";
+    std::mt19937 g(42); 
+    std::shuffle(workload_buffer.begin(), workload_buffer.end(), g);
+
     std::cout << "[HAYAKO LOG] Ingest complete. Running symmetric mutation loops...\n";
     
     run_traditional_benchmark(workload_buffer);
@@ -97,7 +102,8 @@ int main(int argc, char* argv[]) {
     std::cout << "        MOVIELENS 25M STREAMING STATE MUTATION BENCHMARK \n";
     std::cout << "========================================================\n\n";
     
-    std::cout << "[STATUS] Total Records Processed : " << record_count << " Interaction Rows\n\n";
+    std::cout << "[STATUS] Total Records Processed   : " << record_count << " Interaction Rows\n";
+    std::cout << "[STATUS] Dataset Execution Mode    : Randomized\n\n";
     
     std::cout << "Traditional Baseline:\n";
     std::cout << "  Latency:    " << std::fixed << std::setprecision(2) << traditional_average_latency_ns << " ns\n";
