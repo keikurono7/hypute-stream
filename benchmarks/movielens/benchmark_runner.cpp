@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <algorithm> 
 #include <random>    
+#include <sstream>
 
 struct RawTransaction {
     uint64_t src;
@@ -21,29 +22,32 @@ extern double traditional_average_latency_ns;
 extern double hypute_query_throughput;
 extern double hypute_average_latency_ns;
 
-void print_output_grid(const std::string& mode_label, 
-                       double trad_lat, double trad_tp, 
-                       double hyp_lat, double hyp_tp) {
-    double tp_ratio = trad_tp > 0.0 ? (hyp_tp / trad_tp) : 0.0;
-    double lat_diff = trad_lat > 0.0 ? (((trad_lat - hyp_lat) / trad_lat) * 100.0) : 0.0;
-
-    std::cout << "========================================================\n";
-    std::cout << " DATASET EXECUTION MODE: " << mode_label << "\n";
-    std::cout << "========================================================\n";
-    std::cout << "Traditional Baseline:\n";
-    std::cout << "  Latency:    " << std::fixed << std::setprecision(2) << trad_lat << " ns\n";
-    std::cout << "  Throughput: " << std::fixed << std::setprecision(2) << trad_tp << " M qps\n\n";
-    std::cout << "Hypute Stream Runtime:\n";
-    std::cout << "  Latency:    " << std::fixed << std::setprecision(2) << hyp_lat << " ns\n";
-    std::cout << "  Throughput: " << std::fixed << std::setprecision(2) << hyp_tp << " M qps\n\n";
-    std::cout << "Comparative Metrics:\n";
-    std::cout << "  Observed Throughput Ratio   : " << std::fixed << std::setprecision(2) << tp_ratio << "\n";
-    std::cout << "  Observed Latency Difference : " << std::fixed << std::setprecision(2) << lat_diff << "%\n";
-    std::cout << "========================================================\n\n";
+// Programmatic Linux kernel telemetry retrieval hook
+size_t get_current_rss_kb() {
+    std::ifstream stream("/proc/self/status");
+    std::string line;
+    while (std::getline(stream, line)) {
+        if (line.rfind("VmRSS:", 0) == 0) {
+            std::stringstream ss(line);
+            std::string label;
+            size_t value_kb = 0;
+            ss >> label >> value_kb;
+            return value_kb;
+        }
+    }
+    return 0;
 }
 
 int main(int argc, char* argv[]) {
-    const char* ctx = (argc > 1) ? argv[1] : "DEFAULT_CTX";
+    if (argc < 2) {
+        std::cerr << "[ERROR] Missing target execution mode.\n";
+        std::cerr << "Usage: " << argv[0] << " <traditional|hypute> [context]\n";
+        return 1;
+    }
+
+    std::string mode = argv[1];
+    const char* ctx = (argc > 2) ? argv[2] : "DEFAULT_CTX";
+
     std::string dataset = "ml-25m/ratings.csv";
     std::ifstream file(dataset);
     
@@ -84,40 +88,63 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // Pass 1: Preserved Sorted Track Cycles
-    std::cout << "[HAYAKO LOG] Running Phase 1: Preserved Sorted Track Cycles...\n";
-    run_traditional_benchmark(workload_buffer);
-    double trad_sorted_lat = traditional_average_latency_ns;
-    double trad_sorted_tp  = traditional_query_throughput;
-
-    run_hypute_benchmark(workload_buffer, ctx);
-    double hyp_sorted_lat = hypute_average_latency_ns;
-    double hyp_sorted_tp  = hypute_query_throughput;
-
-    // Fixed: Shuffled completely in-place to avoid duplication and eliminate memory overhead bounds
-    std::cout << "[HAYAKO LOG] Randomizing stream event sequencing to mimic real-time production traffic...\n";
-    std::mt19937 g(42); 
-    // Fixed: Typo resolved using standard distribution syntax
-    std::uniform_int_distribution<size_t> dist(0, record_count - 1);
-    std::shuffle(workload_buffer.begin(), workload_buffer.end(), g);
-
-    // Pass 2: High Entropy Randomized Track Cycles
-    std::cout << "[HAYAKO LOG] Running Phase 2: Randomized Track Cycles...\n";
-    run_traditional_benchmark(workload_buffer);
-    double trad_rand_lat = traditional_average_latency_ns;
-    double trad_rand_tp  = traditional_query_throughput;
-
-    run_hypute_benchmark(workload_buffer, ctx);
-    double hyp_rand_lat = hypute_average_latency_ns;
-    double hyp_rand_tp  = hypute_query_throughput;
+    // Capture baseline memory immediately after data loading, but before engines execute allocations
+    size_t rss_baseline_kb = get_current_rss_kb();
 
     std::cout << "\n========================================================\n";
     std::cout << "        MOVIELENS 25M STREAMING STATE MUTATION BENCHMARK \n";
+    std::cout << "========================================================\n";
+    std::cout << "[STATUS] Total Records Processed : " << record_count << " Interaction Rows\n";
+    std::cout << "[STATUS] Isolated Profile Target : " << mode << "\n";
     std::cout << "========================================================\n\n";
-    std::cout << "[STATUS] Total Records Processed : " << record_count << " Interaction Rows\n\n";
 
-    print_output_grid("PRESERVED SORTED DATA", trad_sorted_lat, trad_sorted_tp, hyp_sorted_lat, hyp_sorted_tp);
-    print_output_grid("HIGH ENTROPY RANDOMIZED", trad_rand_lat, trad_rand_tp, hyp_rand_lat, hyp_rand_tp);
+    if (mode == "traditional") {
+        std::cout << "[HAYAKO LOG] Running Traditional Phase 1 (Preserved Sorted)...\n";
+        run_traditional_benchmark(workload_buffer);
+        std::cout << "  Sorted Latency    : " << std::fixed << std::setprecision(2) << traditional_average_latency_ns << " ns\n";
+        std::cout << "  Sorted Throughput : " << traditional_query_throughput << " M qps\n\n";
 
+        std::cout << "[HAYAKO LOG] Randomizing stream event sequencing in-place...\n";
+        std::mt19937 g(42); 
+        std::shuffle(workload_buffer.begin(), workload_buffer.end(), g);
+
+        std::cout << "[HAYAKO LOG] Running Traditional Phase 2 (High Entropy Randomized)...\n";
+        run_traditional_benchmark(workload_buffer);
+        std::cout << "  Random Latency    : " << std::fixed << std::setprecision(2) << traditional_average_latency_ns << " ns\n";
+        std::cout << "  Random Throughput : " << traditional_query_throughput << " M qps\n";
+
+    } else if (mode == "hypute") {
+        std::cout << "[HAYAKO LOG] Running Hypute Phase 1 (Preserved Sorted)...\n";
+        run_hypute_benchmark(workload_buffer, ctx);
+        std::cout << "  Sorted Latency    : " << std::fixed << std::setprecision(2) << hypute_average_latency_ns << " ns\n";
+        std::cout << "  Sorted Throughput : " << hypute_query_throughput << " M qps\n\n";
+
+        std::cout << "[HAYAKO LOG] Randomizing stream event sequencing in-place...\n";
+        std::mt19937 g(42); 
+        std::shuffle(workload_buffer.begin(), workload_buffer.end(), g);
+
+        std::cout << "[HAYAKO LOG] Running Hypute Phase 2 (High Entropy Randomized)...\n";
+        run_hypute_benchmark(workload_buffer, ctx);
+        std::cout << "  Random Latency    : " << std::fixed << std::setprecision(2) << hypute_average_latency_ns << " ns\n";
+        std::cout << "  Random Throughput : " << hypute_query_throughput << " M qps\n";
+
+    } else {
+        std::cerr << "[ERROR] Invalid execution target choice: " << mode << "\n";
+        return 1;
+    }
+
+    // Capture final allocation state before process teardown
+    size_t rss_final_kb = get_current_rss_kb();
+    long long rss_delta_kb = static_cast<long long>(rss_final_kb) - static_cast<long long>(rss_baseline_kb);
+
+    // FIXED: Renamed fields to reflect accurate, honest system-level metrics
+    std::cout << "\n========================================================\n";
+    std::cout << " INTERNAL PROCESS TELEMETRY LOGS (RETAINED STATE)\n";
+    std::cout << "========================================================\n";
+    std::cout << "  Dataset RSS Baseline         : " << std::fixed << std::setprecision(2) << (rss_baseline_kb / 1024.0) << " MB\n";
+    std::cout << "  Final Process VmRSS          : " << std::fixed << std::setprecision(2) << (rss_final_kb / 1024.0) << " MB\n";
+    std::cout << "  Delta RSS (Memory Retained)  : " << std::fixed << std::setprecision(2) << (rss_delta_kb / 1024.0) << " MB\n";
+    std::cout << "========================================================\n";
+    
     return 0;
 }
