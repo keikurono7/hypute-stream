@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <iomanip>
+#include <cstdint> // Added to fix the uint64_t compilation error
 
 struct RawTransaction {
     uint64_t src;
