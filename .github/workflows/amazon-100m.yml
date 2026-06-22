@@ -1,0 +1,41 @@
+name: Hypute Amazon Reviews 100M Benchmark
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-100m-benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Toolchain Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake time python3
+
+      - name: Generate Amazon Reviews 100M Dataset
+        run: |
+          mkdir -p benchmarks/amazon_reviews23/generated
+          python3 benchmarks/amazon_reviews23/generate_dataset.py \
+            benchmarks/amazon_reviews23/generated/amazon_reviews23.csv \
+            100000000
+
+      - name: Build Targets (Release Mode)
+        run: |
+          mkdir -p build
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j$(nproc)
+
+      - name: Profile Traditional Engine (Memory & Ingestion)
+        run: |
+          /usr/bin/time -v ./build/benchmark_runner traditional DEFAULT_CTX \
+            benchmarks/amazon_reviews23/generated/amazon_reviews23.csv
+
+      - name: Profile Hypute Engine (Memory & Ingestion)
+        run: |
+          /usr/bin/time -v ./build/benchmark_runner hypute DEFAULT_CTX \
+            benchmarks/amazon_reviews23/generated/amazon_reviews23.csv

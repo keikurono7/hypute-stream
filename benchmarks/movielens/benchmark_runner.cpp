@@ -45,23 +45,41 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    std::string mode = argv[1];
-    const char* ctx = (argc > 2) ? argv[2] : "DEFAULT_CTX";
+    std::string mode          = argv[1];
+    const char* ctx           = (argc > 2) ? argv[2] : "DEFAULT_CTX";
+    const char* dataset_arg   = (argc > 3) ? argv[3] : nullptr;
 
-    std::string dataset = "ml-25m/ratings.csv";
-    std::ifstream file(dataset);
-    
-    if (!file.is_open()) { dataset = "../benchmarks/movielens/ml-25m/ratings.csv"; file.open(dataset); }
-    if (!file.is_open()) { dataset = "../../benchmarks/movielens/ml-25m/ratings.csv"; file.open(dataset); }
+    std::string dataset;
+    std::ifstream file;
+
+    auto try_open = [&](const std::string& p) -> bool {
+        file.open(p); if (file.is_open()) { dataset = p; return true; }
+        return false;
+    };
+
+    if (dataset_arg) {
+        try_open(dataset_arg);
+    } else {
+        try_open("ml-25m/ratings.csv") ||
+        try_open("../benchmarks/movielens/ml-25m/ratings.csv") ||
+        try_open("../../benchmarks/movielens/ml-25m/ratings.csv");
+    }
 
     if (!file.is_open()) {
-        std::cerr << "[ERROR] MovieLens 25M source file target unreadable.\n";
+        std::cerr << "[ERROR] Dataset file not found or unreadable.\n";
         return 1;
     }
 
+    // Derive label from dataset path
+    std::string bench_label = "MOVIELENS 25M";
+    if (dataset.find("amazon") != std::string::npos || dataset.find("Amazon") != std::string::npos)
+        bench_label = "AMAZON REVIEWS'23 100M";
+    else if (dataset.find("32m") != std::string::npos)
+        bench_label = "MOVIELENS 32M+";
+
     std::cout << "[HAYAKO LOG] Ingesting evaluation records from: " << dataset << "...\n";
     std::vector<RawTransaction> workload_buffer;
-    workload_buffer.reserve(25000000);
+    workload_buffer.reserve(dataset_arg ? 100000000 : 25000000);
 
     std::string line;
     if (std::getline(file, line)) { /* Skip CSV header row */ }
@@ -92,7 +110,7 @@ int main(int argc, char* argv[]) {
     size_t rss_baseline_kb = get_current_rss_kb();
 
     std::cout << "\n========================================================\n";
-    std::cout << "        MOVIELENS 25M STREAMING STATE MUTATION BENCHMARK \n";
+    std::cout << "        " << bench_label << " STREAMING STATE MUTATION BENCHMARK \n";
     std::cout << "========================================================\n";
     std::cout << "[STATUS] Total Records Processed : " << record_count << " Interaction Rows\n";
     std::cout << "[STATUS] Isolated Profile Target : " << mode << "\n";
