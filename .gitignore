@@ -1,0 +1,13 @@
+# Build / trial artifacts
+/build/
+/dist/
+/hypute-trial
+
+# Trial packaging tooling — kept local, never published
+/trial/
+/packaging/
+
+# Datasets
+/ml-32m/
+/ml-25m/
+/ml-20m/

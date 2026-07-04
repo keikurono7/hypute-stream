@@ -103,6 +103,49 @@ Both benchmarks are available as `workflow_dispatch` workflows under the **Actio
 
 ---
 
+## Trial Build (Debian / Ubuntu)
+
+A self-contained evaluation build is distributed as a `.deb` package for quick, no-setup trials on Debian/Ubuntu systems. It bundles everything needed — no dataset download, no compiler, no CMake.
+
+### Install
+
+Download `hypute-trial_<version>_amd64.deb` from the [Releases](https://github.com/hayako-org/hypute-stream/releases) page, then:
+
+```bash
+sudo apt install ./hypute-trial_1.0.0_amd64.deb
+# or:  sudo dpkg -i hypute-trial_1.0.0_amd64.deb
+```
+
+### Run
+
+```bash
+# Built-in synthetic workload — no data required
+hypute-trial
+
+# Or evaluate on your own CSV (rows: source_id,target_id,value[,...])
+hypute-trial /path/to/ratings.csv
+```
+
+The trial runs the traditional vs. Hypute Stream comparison and prints latency, throughput, and the measured speedup. Usage notes are installed at `/usr/share/doc/hypute-trial/README.trial`.
+
+### Trial limits
+
+This build is for evaluation only and is intentionally constrained:
+
+- **Time-limited** — the build stops running ~30 days after it was produced.
+- **Volume-capped** — the workload is limited to 1,000,000 rows (larger inputs are truncated).
+- **Not for production** — no engine library or development header is included; the package ships a single, evaluation-only executable.
+
+For a licensed production build without these limits, contact the [Hayako](https://hayako.io) team.
+
+### Uninstall
+
+```bash
+sudo apt remove hypute-trial
+```
+
+---
+
 ## Prerequisites
 
 - C++17 compiler (GCC ≥ 9 or Clang ≥ 10)
